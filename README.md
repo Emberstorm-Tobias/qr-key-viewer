@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Show Key</title>
+<meta name="color-scheme" content="dark light">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    font-family:system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial,sans-serif;
+    min-height:100vh;display:flex;align-items:center;justify-content:center;
+    background:url("background.jpg") center/cover no-repeat fixed; /* <-- change image */
+    color:#fff;text-align:center;padding:20px;
+  }
+  .overlay{
+    background:rgba(0,0,0,0.6);padding:30px;border-radius:16px;
+    max-width:600px;width:100%;
+  }
+  h1{font-size:20px;margin-bottom:16px}
+  .key{
+    font:700 32px/1.3 ui-monospace,monospace;
+    word-break:break-word;
+    background:#111;border:1px dashed #555;padding:16px;border-radius:12px;
+    margin-bottom:16px;
+  }
+  button{
+    background:#3c73ff;color:white;border:none;
+    padding:12px 18px;border-radius:10px;cursor:pointer;
+    font-weight:600;box-shadow:0 4px 12px rgba(0,0,0,.25);
+  }
+  button:active{transform:scale(0.97)}
+  .ok{display:none;margin-top:8px;color:#9bd59b;font-size:14px}
+  footer{margin-top:20px;font-size:14px;color:#ddd}
+  a{color:#9fc0ff}
+</style>
+</head>
+<body>
+  <div class="overlay">
+    <h1>Your Game Key</h1>
+    <div id="key" class="key">—</div>
+    <button id="copy">Copy Key</button>
+    <div id="ok" class="ok">Copied!</div>
+    <footer>
+      For support: <a href="mailto:your@email.com">your@email.com</a>
+    </footer>
+  </div>
+
+<script>
+(function(){
+  function getParam(){
+    const hash = (location.hash||"").replace(/^#/,"");
+    if(hash){
+      const m = hash.match(/^k=(.*)$/i);
+      return decodeURIComponent(m? m[1] : hash);
+    }
+    const q = new URLSearchParams(location.search);
+    return q.get("k") || "";
+  }
+  function setKeyText(v){
+    document.getElementById('key').textContent = v || "—";
+    document.title = v ? `Key: ${v}` : "Show Key";
+  }
+  async function copyText(txt){
+    try{
+      await navigator.clipboard.writeText(txt);
+      const ok = document.getElementById('ok');
+      ok.style.display='block';
+      setTimeout(()=>ok.style.display='none',1200);
+    }catch(e){console.warn(e);}
+  }
+  const key = getParam();
+  setKeyText(key);
+  document.getElementById('copy').addEventListener('click', ()=> key && copyText(key));
+})();
+</script>
+</body>
+</html>
