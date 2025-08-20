@@ -42,7 +42,7 @@
     <button id="copy">Copy Key</button>
     <div id="ok" class="ok">Copied!</div>
     <footer>
-      contact me at: <a href="mailto:tobias.hermann@emberstorm.de">your@email.com</a>
+      contact me at: <a href="mailto:tobias.hermann@emberstorm.de">tobias.hermann@emberstorm.de</a>
     </footer>
   </div>
 
