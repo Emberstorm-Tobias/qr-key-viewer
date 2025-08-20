@@ -33,11 +33,24 @@
   .ok{display:none;margin-top:8px;color:#9bd59b;font-size:14px}
   footer{margin-top:20px;font-size:14px;color:#ddd}
   a{color:#9fc0ff}
+ .logo-container {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 12px;
+}
+
+.logo {
+  max-width: 200px;   /* scales to fit */
+  height: auto;
+}
 </style>
 </head>
 <body>
+ <div class="logo-container">
+  <img src="logo.PNG" alt="Game Logo" class="logo">
+</div>
   <div class="overlay">
-    <h1>Your REKA Steam Key</h1>
+    <h1>Your Steam Key</h1>
     <div id="key" class="key">—</div>
     <button id="copy">Copy Key</button>
     <div id="ok" class="ok">Copied!</div>
