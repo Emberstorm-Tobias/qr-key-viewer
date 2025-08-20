@@ -37,12 +37,12 @@
 </head>
 <body>
   <div class="overlay">
-    <h1>Your Game Key</h1>
+    <h1>Your REKA Steam Key</h1>
     <div id="key" class="key">—</div>
     <button id="copy">Copy Key</button>
     <div id="ok" class="ok">Copied!</div>
     <footer>
-      For support: <a href="mailto:your@email.com">your@email.com</a>
+      contact me at: <a href="mailto:tobias.hermann@emberstorm.de">your@email.com</a>
     </footer>
   </div>
 
