@@ -29,12 +29,15 @@
     background:#111;border:1px dashed #555;padding:16px;border-radius:12px;
     margin-bottom:16px;
   }
-  button{
-    background:#E97451;color:#2B0F06;border:none;
-    padding:12px 18px;border-radius:10px;cursor:pointer;
-    font-weight:700;box-shadow:0 4px 12px rgba(0,0,0,.25);
+  button,.btn{
+    display:inline-block;background:#E97451;color:#2B0F06;border:none;
+    padding:12px 18px;border-radius:10px;cursor:pointer;text-decoration:none;
+    font-weight:700;font-size:1rem;font-family:inherit;box-shadow:0 4px 12px rgba(0,0,0,.25);
   }
-  button:active{transform:scale(0.97)}
+  button:active,.btn:active{transform:scale(0.97)}
+  button.secondary{background:#333;color:#fff;font-weight:600}
+  .btn-row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+  .hidden{display:none !important}
   .ok{display:none;margin-top:8px;color:#9bd59b;font-size:14px}
   footer{margin-top:20px;font-size:14px;color:#ddd}
   a{color:#E97451}
@@ -59,7 +62,10 @@
     </div>
     <h1>Your Steam Key</h1>
     <div id="key" class="key">—</div>
-    <button id="copy">Copy Key</button>
+    <div class="btn-row">
+      <a id="redeem" class="btn hidden" target="_blank" rel="noopener">Redeem on Steam</a>
+      <button id="copy" class="secondary">Copy Key</button>
+    </div>
     <div id="ok" class="ok">Copied!</div>
     <footer>
       contact me at: <a id="contact" href="mailto:tobias.hermann@emberstorm.de">tobias.hermann@emberstorm.de</a>
@@ -94,6 +100,11 @@
   }
   const p = getParams();
   setKeyText(p.k);
+  if(p.k){
+    const r = document.getElementById('redeem');
+    r.href = 'https://store.steampowered.com/account/registerkey?key=' + encodeURIComponent(p.k);
+    r.classList.remove('hidden');
+  }
   if(p.c){
     const a = document.getElementById('contact');
     a.textContent = p.c;
