@@ -62,20 +62,23 @@
     <button id="copy">Copy Key</button>
     <div id="ok" class="ok">Copied!</div>
     <footer>
-      contact me at: <a href="mailto:tobias.hermann@emberstorm.de">tobias.hermann@emberstorm.de</a>
+      contact me at: <a id="contact" href="mailto:tobias.hermann@emberstorm.de">tobias.hermann@emberstorm.de</a>
     </footer>
   </div>
 
 <script>
 (function(){
-  function getParam(){
+  function getParams(){
     const hash = (location.hash||"").replace(/^#/,"");
     if(hash){
-      const m = hash.match(/^k=(.*)$/i);
-      return decodeURIComponent(m? m[1] : hash);
+      if(hash.indexOf("=") >= 0){
+        const p = new URLSearchParams(hash);
+        if(p.has("k")) return {k: p.get("k") || "", c: p.get("c") || ""};
+      }
+      return {k: decodeURIComponent(hash), c: ""};
     }
     const q = new URLSearchParams(location.search);
-    return q.get("k") || "";
+    return {k: q.get("k") || "", c: q.get("c") || ""};
   }
   function setKeyText(v){
     document.getElementById('key').textContent = v || "—";
@@ -89,9 +92,14 @@
       setTimeout(()=>ok.style.display='none',1200);
     }catch(e){console.warn(e);}
   }
-  const key = getParam();
-  setKeyText(key);
-  document.getElementById('copy').addEventListener('click', ()=> key && copyText(key));
+  const p = getParams();
+  setKeyText(p.k);
+  if(p.c){
+    const a = document.getElementById('contact');
+    a.textContent = p.c;
+    a.href = 'mailto:' + p.c;
+  }
+  document.getElementById('copy').addEventListener('click', ()=> p.k && copyText(p.k));
 })();
 </script>
 </body>

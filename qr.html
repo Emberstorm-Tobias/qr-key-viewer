@@ -166,6 +166,15 @@
       <div id="setup-status" class="counter"></div>
 
       <div style="border-top:1px dashed #555;margin:14px 0;padding-top:14px">
+        <label for="email-in">Your contact email (shown on the key page your QR codes open):</label>
+        <input type="email" id="email-in" placeholder="you@example.com" autocomplete="email" autocapitalize="off" spellcheck="false"
+               style="width:100%;background:#111;color:#fff;border:1px dashed #555;border-radius:10px;padding:10px;font:13px ui-monospace,monospace;margin-bottom:10px">
+        <div class="btn-row">
+          <button id="save-email" class="secondary">Save email</button>
+        </div>
+      </div>
+
+      <div style="border-top:1px dashed #555;margin:14px 0;padding-top:14px">
         <label for="share-count">Hand keys over to a teammate&rsquo;s phone:</label>
         <div class="btn-row">
           <input type="number" id="share-count" min="1" value="3"
@@ -223,7 +232,10 @@
     return new URL('.', location.href).href;
   }
   function base(){ return state.base || defaultBase(); }
-  function linkFor(key){ return base() + '#k=' + encodeURIComponent(key); }
+  function linkFor(key){
+    return base() + '#k=' + encodeURIComponent(key)
+      + (state.email ? '&c=' + encodeURIComponent(state.email) : '');
+  }
 
   function nextUnused(){ return state.keys.find(k => !k.used); }
   function remaining(){ return state.keys.filter(k => !k.used).length; }
@@ -290,6 +302,7 @@
 
   function refreshSetup(){
     $('base-in').value = base();
+    $('email-in').value = state.email || '';
     const given = state.keys.filter(k => k.used);
     $('history-summary').textContent = 'Given keys (' + given.length + ')';
     $('history-list').innerHTML = '';
@@ -339,6 +352,14 @@
     $('setup-status').textContent =
       'Added ' + added + (dupes ? ' (' + dupes + ' duplicates skipped)' : '') +
       ' — ' + remaining() + ' left to give away';
+  });
+
+  $('save-email').addEventListener('click', () => {
+    state.email = $('email-in').value.trim() || null;
+    save();
+    $('setup-status').textContent = state.email
+      ? 'Email saved — your QR codes will show ' + state.email + '.'
+      : 'Email cleared — the key page will show its default contact.';
   });
 
   $('save-base').addEventListener('click', () => {
