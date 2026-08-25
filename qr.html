@@ -82,6 +82,38 @@
       <div class="small-link"><a href="#" id="to-setup">Manage keys</a></div>
     </div>
 
+    <!-- ===== hand-off view (sender) ===== -->
+    <div id="view-share" class="hidden">
+      <h1>Teammate: scan this with your phone</h1>
+      <div id="share-qr" class="qr-card"></div>
+      <div id="share-keys" class="key-text" style="font-size:13px"></div>
+      <p style="font-size:13px;color:#ddd;margin-bottom:12px">
+        Scanning opens this page on their phone and offers to import these keys.
+        Anyone with this QR or link gets the keys &mdash; only show or send it to your teammate.
+      </p>
+      <div class="btn-row">
+        <button id="share-done">They have them &mdash; remove from this phone</button>
+      </div>
+      <div class="btn-row">
+        <button id="share-copy" class="secondary">Copy link instead</button>
+        <button id="share-cancel" class="secondary">Cancel &mdash; keep keys here</button>
+      </div>
+      <div id="share-status" class="counter" style="margin-top:8px"></div>
+    </div>
+
+    <!-- ===== import view (receiver) ===== -->
+    <div id="view-import" class="hidden">
+      <h1>Import these keys?</h1>
+      <div id="import-list" class="key-text" style="font-size:13px"></div>
+      <p style="font-size:13px;color:#ddd;margin-bottom:12px">
+        They will be stored only in this browser on this device.
+      </p>
+      <div class="btn-row">
+        <button id="import-ok">Add to this device</button>
+        <button id="import-cancel" class="secondary">Cancel</button>
+      </div>
+    </div>
+
     <!-- ===== empty state ===== -->
     <div id="view-empty" class="hidden">
       <h1 id="empty-msg">No keys loaded</h1>
@@ -102,6 +134,15 @@
         <button id="back" class="secondary">Back</button>
       </div>
       <div id="setup-status" class="counter"></div>
+
+      <div style="border-top:1px dashed #555;margin:14px 0;padding-top:14px">
+        <label for="share-count">Hand keys over to a teammate&rsquo;s phone:</label>
+        <div class="btn-row">
+          <input type="number" id="share-count" min="1" value="3"
+                 style="width:70px;background:#111;color:#fff;border:1px dashed #555;border-radius:10px;padding:10px;font:14px ui-monospace,monospace">
+          <button id="make-share">Create hand-off QR</button>
+        </div>
+      </div>
 
       <details>
         <summary>Advanced</summary>
@@ -158,18 +199,22 @@
   function remaining(){ return state.keys.filter(k => !k.used).length; }
 
   const $ = id => document.getElementById(id);
-  const views = ['view-show','view-empty','view-setup'];
+  const views = ['view-show','view-empty','view-setup','view-share','view-import'];
   function show(view){
     views.forEach(v => $(v).classList.toggle('hidden', v !== view));
   }
 
-  function renderQR(text){
+  function renderQR(text, el){
     const qr = qrcode(0, 'M');
     qr.addData(text);
     qr.make();
     // margin:4 keeps the required quiet zone inside the SVG itself.
-    $('qr').innerHTML = qr.createSvgTag({cellSize: 8, margin: 4, scalable: true});
+    $(el || 'qr').innerHTML = qr.createSvgTag({cellSize: 8, margin: 4, scalable: true});
   }
+
+  // base64url so key hand-off payloads survive inside a URL fragment
+  function b64u(s){ return btoa(s).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''); }
+  function unb64u(s){ return atob(s.replace(/-/g,'+').replace(/_/g,'/')); }
 
   function refresh(){
     const cur = nextUnused();
@@ -258,6 +303,78 @@
     save(); refreshSetup();
   });
 
+  // ---- hand-off between devices ----
+  let pendingShare = null, pendingLink = null;
+
+  $('make-share').addEventListener('click', () => {
+    const n = parseInt($('share-count').value, 10);
+    const unused = state.keys.filter(k => !k.used);
+    if(!n || n < 1 || n > unused.length){
+      $('setup-status').textContent = unused.length
+        ? 'Pick between 1 and ' + unused.length + ' keys to hand over.'
+        : 'No unused keys left to hand over.';
+      return;
+    }
+    // Take from the end of the queue so the key currently on screen stays put.
+    pendingShare = unused.slice(-n).map(k => k.k);
+    pendingLink = new URL('qr.html', location.href).href + '#import=' + b64u(pendingShare.join('\n'));
+    renderQR(pendingLink, 'share-qr');
+    $('share-keys').textContent = pendingShare.join('\n');
+    $('share-status').textContent = '';
+    show('view-share');
+  });
+
+  $('share-done').addEventListener('click', () => {
+    if(!confirm('Remove these ' + pendingShare.length + ' keys from this phone? Only do this once your teammate has imported them.')) return;
+    const gone = new Set(pendingShare);
+    state.keys = state.keys.filter(k => !gone.has(k.k));
+    save();
+    pendingShare = pendingLink = null;
+    refreshSetup();
+    $('setup-status').textContent = 'Handed over ' + gone.size + ' keys — removed from this device.';
+  });
+
+  $('share-copy').addEventListener('click', async () => {
+    try{
+      await navigator.clipboard.writeText(pendingLink);
+      $('share-status').textContent = 'Link copied — anyone who sees it gets the keys, send it privately.';
+    }catch(e){
+      $('share-status').textContent = 'Could not copy — long-press the QR page URL instead.';
+    }
+  });
+
+  $('share-cancel').addEventListener('click', () => {
+    pendingShare = pendingLink = null;
+    refreshSetup();
+  });
+
+  // Receiver side: #import=... offers to add the keys, then strips the
+  // payload from the URL so it doesn't linger in the address bar/history.
+  let importing = false;
+  const im = (location.hash || '').match(/^#import=(.+)$/);
+  if(im){
+    history.replaceState(null, '', location.pathname + location.search);
+    let incoming = [];
+    try{ incoming = unb64u(im[1]).split('\n').map(s => s.trim()).filter(Boolean); }catch(e){}
+    if(incoming.length){
+      $('import-list').textContent = incoming.join('\n');
+      $('import-ok').addEventListener('click', () => {
+        const known = new Set(state.keys.map(k => k.k));
+        let added = 0;
+        incoming.forEach(k => {
+          if(known.has(k)) return;
+          known.add(k);
+          state.keys.push({k: k, used: false, at: null});
+          added++;
+        });
+        save();
+        refresh();
+      });
+      $('import-cancel').addEventListener('click', refresh);
+      importing = true;
+    }
+  }
+
   // Keep the screen awake while showing QR codes, where supported.
   if('wakeLock' in navigator){
     let lock = null;
@@ -270,7 +387,7 @@
     });
   }
 
-  refresh();
+  if(importing) show('view-import'); else refresh();
 })();
 </script>
 </body>
